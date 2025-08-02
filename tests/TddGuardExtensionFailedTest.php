@@ -125,7 +125,7 @@ class ErroredTest extends TestCase {
         $data = json_decode(file_get_contents($jsonPath), true);
         $this->assertArrayHasKey('reason', $data);
         $this->assertEquals('failed', $data['reason']);
-        
+
         $module = $data['testModules'][0];
         $test = $module['tests'][0];
         $this->assertEquals('testWithError', $test['name']);
