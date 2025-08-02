@@ -68,6 +68,8 @@ class FailingTest extends TestCase {
         $this->assertFileExists($jsonPath);
         $data = json_decode(file_get_contents($jsonPath), true);
         $this->assertArrayHasKey('testModules', $data);
+        $this->assertArrayHasKey('reason', $data);
+        $this->assertEquals('failed', $data['reason']);
 
         $module = $data['testModules'][0];
         $test = $module['tests'][0];
@@ -76,6 +78,60 @@ class FailingTest extends TestCase {
         $this->assertEquals('failed', $test['state']);
         $this->assertArrayHasKey('errors', $test);
         $this->assertStringContainsString('Math is broken!', $test['errors'][0]['message']);
+    }
+
+    public function testExtensionCapturesErroredTest(): void
+    {
+        // Given: A test file with a test that errors
+        $testFile = $this->tempDir . '/ErroredTest.php';
+        file_put_contents($testFile, '<?php
+use PHPUnit\Framework\TestCase;
+class ErroredTest extends TestCase {
+    public function testWithError(): void {
+        throw new \RuntimeException("Something went terribly wrong!");
+    }
+}');
+
+        $phpunitXml = $this->tempDir . '/phpunit.xml';
+        file_put_contents($phpunitXml, '<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="' . dirname(__DIR__) . '/vendor/autoload.php">
+    <testsuites>
+        <testsuite name="Example">
+            <file>' . $testFile . '</file>
+        </testsuite>
+    </testsuites>
+    <extensions>
+        <bootstrap class="TddGuard\PHPUnit\TddGuardExtension">
+            <parameter name="projectRoot" value="' . $this->tempDir . '"/>
+        </bootstrap>
+    </extensions>
+</phpunit>');
+
+        // When: We run PHPUnit with our extension
+        $command = sprintf(
+            'cd %s && php %s/vendor/bin/phpunit -c %s 2>&1',
+            escapeshellarg($this->tempDir),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg($phpunitXml)
+        );
+        exec($command, $output, $returnCode);
+
+        // Then: The test should error and reason should be failed
+        $this->assertNotEquals(0, $returnCode, 'PHPUnit should exit with non-zero');
+        $jsonPath = $this->tempDir . '/.claude/tdd-guard/data/test.json';
+        $this->assertFileExists($jsonPath);
+        $data = json_decode(file_get_contents($jsonPath), true);
+        $this->assertArrayHasKey('reason', $data);
+        $this->assertEquals('failed', $data['reason']);
+        
+        $module = $data['testModules'][0];
+        $test = $module['tests'][0];
+        $this->assertEquals('testWithError', $test['name']);
+        $this->assertEquals('errored', $test['state']);
+        $this->assertArrayHasKey('errors', $test);
+        $this->assertStringContainsString('Something went terribly wrong!', $test['errors'][0]['message']);
     }
 
     public function testExtensionCapturesSkippedTest(): void
@@ -120,6 +176,8 @@ class SkippedTest extends TestCase {
         $jsonPath = $this->tempDir . '/.claude/tdd-guard/data/test.json';
         $this->assertFileExists($jsonPath);
         $data = json_decode(file_get_contents($jsonPath), true);
+        $this->assertArrayHasKey('reason', $data);
+        $this->assertEquals('passed', $data['reason']);
         $module = $data['testModules'][0];
         $test = $module['tests'][0];
         $this->assertEquals('testSkipped', $test['name']);

@@ -28,7 +28,7 @@ final class TestResultCollector
             'state' => $state,
         ];
 
-        if ($message !== null && $state === 'failed') {
+        if ($message !== null && ($state === 'failed' || $state === 'errored')) {
             $result['errors'] = [
                 ['message' => $message],
             ];
@@ -72,6 +72,8 @@ final class TestResultCollector
         }
 
         $modules = [];
+        $hasFailures = false;
+        
         foreach ($this->testResults as $item) {
             $moduleId = $item['module'];
             if (!isset($modules[$moduleId])) {
@@ -81,10 +83,16 @@ final class TestResultCollector
                 ];
             }
             $modules[$moduleId]['tests'][] = $item['test'];
+            
+            // Check if any test failed
+            if ($item['test']['state'] === 'failed' || $item['test']['state'] === 'errored') {
+                $hasFailures = true;
+            }
         }
 
         $output = [
             'testModules' => array_values($modules),
+            'reason' => $hasFailures ? 'failed' : 'passed',
         ];
 
         $this->storage->saveTest(json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));

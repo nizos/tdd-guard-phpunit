@@ -69,6 +69,8 @@ class ExampleTest extends TestCase {
         $data = json_decode(file_get_contents($jsonPath), true);
         $this->assertArrayHasKey('testModules', $data);
         $this->assertCount(1, $data['testModules']);
+        $this->assertArrayHasKey('reason', $data);
+        $this->assertEquals('passed', $data['reason']);
 
         $module = $data['testModules'][0];
         $this->assertStringContainsString('ExampleTest.php', $module['moduleId']);

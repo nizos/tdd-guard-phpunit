@@ -21,7 +21,7 @@ final class ErroredTestSubscriber implements ErroredSubscriber
     {
         $this->collector->addTestResult(
             $event->test(),
-            'failed',
+            'errored',
             $event->throwable()->message()
         );
     }
