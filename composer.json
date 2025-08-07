@@ -1,6 +1,7 @@
 {
     "name": "tdd-guard/phpunit",
     "description": "PHPUnit reporter for TDD Guard",
+    "version": "0.1.2",
     "type": "library",
     "license": "MIT",
     "authors": [
