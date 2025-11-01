@@ -5,7 +5,7 @@ PHPUnit reporter that captures test results for TDD Guard validation.
 ## Requirements
 
 - PHP 8.1+
-- PHPUnit 9.0+ or 10.0+ or 11.0+
+- PHPUnit 9.0+ or 10.0+ or 11.0+ or 12.0+
 - [TDD Guard](https://github.com/nizos/tdd-guard) installed globally
 
 ## Installation
